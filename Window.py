@@ -2,6 +2,7 @@
 # Requirements: python3
 # Packages: numpy opencv-python pyqt5
 
+#importing all the necessary packages
 import sys
 import os
 from PyQt5.QtWidgets import (QWidget, QPushButton, QVBoxLayout, QApplication,
@@ -23,7 +24,9 @@ def convert_video_to_frames(input_file_path, output_dir_path):
 
     idx = 0
     while True:
-
+        
+#reads the file and creates single frames and resizes it to 256*256 resolution and saves it in a folder
+        
         ret, frame = cap.read()
         if ret is False:
             break
@@ -39,7 +42,7 @@ def convert_video_to_frames(input_file_path, output_dir_path):
 
     return True, "Saved %d frames with success" % idx, file_paths
 
-
+#gets the last output layer
 def get_output_layers(net):
     layer_names = net.getLayerNames()
     output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
@@ -47,7 +50,7 @@ def get_output_layers(net):
 
 
 def run_yolo(input_frames, output_folder):
-
+#reads the class names from coco.names file and the configuration path also
     scale = 0.00392
     classes = None
     with open("coco.names", 'r') as f:
@@ -61,12 +64,15 @@ def run_yolo(input_frames, output_folder):
     for file_path in input_frames:
         image = cv2.imread(file_path)
         
+        #width and height
         Width = image.shape[1]
         Height = image.shape[0]
 
+        #blob creation
         blob = cv2.dnn.blobFromImage(image, scale, (608,608), (0,0,0), True, crop=False)
         net.setInput(blob)
 
+        #forward prpogation
         outs = net.forward(get_output_layers(net))
 
         class_ids = []
@@ -91,6 +97,7 @@ def run_yolo(input_frames, output_folder):
                     confidences.append(float(confidence))
                     boxes.append([x, y, w, h])
 
+        #NMS - Non Maximum Suppression to avoid multiple bounding boxes for a single object
         indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
 
         if len(boxes) > 0:
@@ -103,11 +110,13 @@ def run_yolo(input_frames, output_folder):
                 w = round(box[2])
                 h = round(box[3])
                 
+                #drawing bounding boxes
                 label = str(classes[class_id]) + " %.3f" % confidences[i]
                 color = COLORS[class_id]
                 cv2.rectangle(image, (x,y), (x+w,y+h), color, 2)
                 cv2.putText(image, label, (x-10,y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
         
+        #the output after detection of images with bounding boxes are stored in the selected folder
         file_name = os.path.basename(file_path)
         output_file_path = os.path.join(output_folder, file_name)
         print("Saving detection at: ", output_file_path)
@@ -121,7 +130,7 @@ def run_yolo(input_frames, output_folder):
     return "Messages"
     
 
-
+#for window, label, buttons and widget creation
 class Window(QWidget):
 
     def __init__(self):
@@ -198,16 +207,17 @@ class Window(QWidget):
         detections_path = self.txt_output_folder_path.text()
         video_path = self.txt_input_file.text()
 
+        #Error messages if path, file, folder does not exist
         if not os.path.exists(video_path):
-            self.txt_status.setText("Fail: input file does not exists!")
+            self.txt_status.setText("Fail: input file does not exist!")
             return
 
         if not os.path.isdir(single_frames_path):
-            self.txt_status.setText("Fail: output single frames folder does not exists!")
+            self.txt_status.setText("Fail: output single frames folder does not exist!")
             return
 
         if not os.path.isdir(detections_path):
-            self.txt_status.setText("Fail: output detections folder does not exists!")
+            self.txt_status.setText("Fail: output detections folder does not exist!")
             return
 
         ret, message, file_paths = convert_video_to_frames(video_path,
@@ -222,6 +232,7 @@ class Window(QWidget):
         
             
 
+        #closes all the video displaying, the widget and all other windows once detection is completed
         cv2.destroyAllWindows()
         
 if __name__ == '__main__':
