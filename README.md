@@ -10,6 +10,9 @@ Open-cv library
 Download the weights file for YOLOV3 - YOLOv3-608 available online from the below link
 https://github.com/pjreddie/darknet/blob/master/cfg/yolov3-spp.cfg
 
+Run:
+python Window.py
+
 Description:
 This project deals with object detection using Python opencv library
 YOLOV3 is used here.
